@@ -1,0 +1,31 @@
+
+# 测试达妙电机夹爪的QT界面控制
+conda activate rebot
+cd gripper_control
+python motor_control_pyqt.py
+python gripper_ui_integrated_tactile.py
+python gripper_ui_integrated_tactile_vis_plot.py
+
+# 达妙电机夹爪的极限位置标定（手动）
+cd gripper_control
+python motor_pos_detection_read.py
+
+# 测试robotiq夹爪的手势识别mujoco仿真控制
+cd cv_control
+conda activate force_gripper 
+python cv_sim_gripper_tactile_rgb.py  # 单独夹爪
+python cv_sim_gripper_arm_tac.py  # 集成至机械臂末端
+
+
+# 测试robotiq夹爪的手势识别真机real控制
+cd cv_control/gripper_real
+python cv_motor_continuous_control_plot.py  # 连续映射控制 real
+python cv_motor_continuous_tactile_control_plot.py  # 带触觉反馈的手势识别真机real控制
+
+python cv_sim_and_real_continuous_control_plot.py  # 连续映射控制 real & sim
+python cv_sim2real_continuous_control_plot.py  # sim2real （CV -> 仿真 -> 真机）
+
+# 带触觉的robotiq夹爪依靠手势识别数据保存
+# python cv_motor_continuous_tactile_control_plot_save_data.py --task_name "grasp_test" --dataset_dir "/home/hjx/hjx_file/STF/Force_Gripper/data/data_tactile_gripper" --episode_len 1000
+
+
