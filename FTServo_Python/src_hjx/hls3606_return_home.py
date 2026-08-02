@@ -33,11 +33,11 @@ SERIAL_PORT = "/dev/ttyACM1"
 BAUDRATE = 1000000
 
 # 默认舵机 ID 列表
-DEFAULT_SERVO_IDS = [1]
+DEFAULT_SERVO_IDS = [7]
 
 # 默认零点位置 (raw 值, 0-4095 对应 0-360°)
 # 2048 = 180° (中间位置)
-DEFAULT_HOME_POSITIONS = {1: 2048}
+DEFAULT_HOME_POSITIONS = {7: 2048}
 
 # 回零运动参数
 # 速度: raw 值, 实际速度 = raw * 0.732 rpm
@@ -203,7 +203,7 @@ def main():
     )
     parser.add_argument("--port", type=str, default=SERIAL_PORT, help=f"串口设备 (默认: {SERIAL_PORT})")
     parser.add_argument("--baudrate", type=int, default=BAUDRATE, help=f"波特率 (默认: {BAUDRATE})")
-    parser.add_argument("--ids", type=str, default="1", help="舵机ID列表, 逗号分隔 (默认: 1)")
+    parser.add_argument("--ids", type=str, default="7", help="舵机ID列表, 逗号分隔 (默认: 7)")
     parser.add_argument("--home-pos", type=str, default=None, help="各舵机零点位置(raw值), 逗号分隔 (默认: 各2048)")
     parser.add_argument("--speed", type=int, default=DEFAULT_HOME_SPEED, help=f"回零速度 raw 值 (默认: {DEFAULT_HOME_SPEED})")
     parser.add_argument("--acc", type=int, default=DEFAULT_HOME_ACC, help=f"回零加速度 raw 值 (默认: {DEFAULT_HOME_ACC})")

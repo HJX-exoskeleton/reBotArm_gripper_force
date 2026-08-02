@@ -28,7 +28,7 @@ SERIAL_PORT = "/dev/ttyACM1"   # 根据实际连接修改
 BAUDRATE = 1000000             # HLS 默认波特率 1M
 
 # 舵机 ID 列表 (可修改为实际使用的 ID)
-SERVO_IDS = [1]
+SERVO_IDS = [7]
 
 
 def init_communication(port_name, baudrate):

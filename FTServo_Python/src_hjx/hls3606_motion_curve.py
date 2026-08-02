@@ -347,7 +347,7 @@ def main():
     )
     parser.add_argument("--port", type=str, default=SERIAL_PORT, help=f"串口设备 (默认: {SERIAL_PORT})")
     parser.add_argument("--baudrate", type=int, default=BAUDRATE, help=f"波特率 (默认: {BAUDRATE})")
-    parser.add_argument("--ids", type=str, default="1", help="舵机ID列表 (默认: 1)")
+    parser.add_argument("--ids", type=str, default="7", help="舵机ID列表 (默认: 7)")
     parser.add_argument("--mode", type=str, default="sine",
                         choices=["sine", "trapezoid", "triangle", "sweep"],
                         help="运动轨迹模式 (默认: sine)")

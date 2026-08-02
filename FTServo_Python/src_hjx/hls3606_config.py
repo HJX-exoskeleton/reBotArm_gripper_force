@@ -34,7 +34,7 @@ from scservo_sdk import *
 # ==================== 默认配置 ====================
 SERIAL_PORT = "/dev/ttyACM1"
 BAUDRATE = 1000000
-DEFAULT_ID = 1
+DEFAULT_ID = 7
 
 
 def init_communication(port_name, baudrate):
@@ -252,7 +252,7 @@ def main():
     )
     parser.add_argument("--port", type=str, default=SERIAL_PORT)
     parser.add_argument("--baudrate", type=int, default=BAUDRATE)
-    parser.add_argument("--id", type=int, default=DEFAULT_ID, help="舵机ID (默认: 1)")
+    parser.add_argument("--id", type=int, default=DEFAULT_ID, help="舵机ID (默认: 7)")
     parser.add_argument("--read", action="store_true", help="读取当前配置")
     parser.add_argument("--set-id", type=int, metavar="NEW_ID", help="修改舵机ID为目标值")
     parser.add_argument("--old-id", type=int, default=None, help="修改ID时的旧ID (默认用 --id)")

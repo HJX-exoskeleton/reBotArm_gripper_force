@@ -16,6 +16,9 @@ pip install numpy matplotlib pyserial
 | `hls3606_return_home.py` | 回归初始位置 | 零点复位 |
 | `hls3606_motion_curve.py` | 运动曲线实时绘制 | 轨迹追踪测试 |
 | `hls3606_sync_multi.py` | 多舵机同步控制 | 多关节协同 |
+| `hls3606_force_feedback.py` | 力反馈/柔顺控制 | 扭矩限制下的柔顺弹簧感 |
+| `hls3606_free_encoder.py` | 自由编码器模式 | 无阻力手动转动+角度反馈 |
+| `hls3606_config.py` | ID/中位配置工具 | 修改舵机ID、中位校准 |
 
 ---
 
@@ -24,7 +27,7 @@ pip install numpy matplotlib pyserial
 验证舵机通信是否正常，读取基本状态信息。
 
 ```bash
-# 默认使用 /dev/ttyACM0, 测试 ID 1,2
+# 默认使用 /dev/ttyACM1, 测试 ID 1
 python hls3606_ping_test.py
 ```
 
@@ -43,7 +46,7 @@ python hls3606_ping_test.py
 将舵机安全地移动到预设零点位置。
 
 ```bash
-# 默认回零 (ID 1,2 → 2048,2048)
+# 默认回零 (ID 1 → 2048)
 python hls3606_return_home.py
 
 # 指定舵机和零点位置
@@ -63,9 +66,9 @@ python hls3606_return_home.py --no-release
 
 | 参数 | 默认值 | 说明 |
 |------|--------|------|
-| `--port` | `/dev/ttyACM0` | 串口设备路径 |
+| `--port` | `/dev/ttyACM1` | 串口设备路径 |
 | `--baudrate` | `1000000` | 波特率 (HLS 默认 1M) |
-| `--ids` | `1,2` | 舵机 ID 列表 |
+| `--ids` | `1` | 舵机 ID 列表 |
 | `--home-pos` | `2048,...` | 各舵机零点 (raw值, 0-4095) |
 | `--speed` | `20` | 回零速度 (~14.6 rpm) |
 | `--acc` | `10` | 回零加速度 (~87 deg/s²) |
@@ -125,9 +128,7 @@ python hls3606_motion_curve.py --mode sine --min-pos 512 --max-pos 3584 --durati
 | `--save` | False | 保存数据到 CSV |
 | `--save-dir` | `./data_logs` | CSV 保存目录 |
 
-**实时绘图窗口:**
-- 上方子图: 每个舵机的目标位置(红虚线) vs 实际位置(蓝实线)
-- 下方子图: 每个舵机的追踪误差 (度)
+**实时绘图窗口:** 每个舵机一个子图, 显示目标位置(红虚线) vs 实际位置(蓝实线)。
 
 ---
 
@@ -163,13 +164,107 @@ python hls3606_sync_multi.py --mode sync_read --ids 1,2 --read-interval 0.1
 | 参数 | 默认值 | 说明 |
 |------|--------|------|
 | `--mode` | `sync_pos` | 运动模式 |
-| `--ids` | `1,2` | 舵机 ID 列表 |
+| `--ids` | `1` | 舵机 ID 列表 |
 | `--speed` | `40` | 运动速度 |
 | `--acc` | `20` | 加速度 |
 | `--step-delay` | `2.0` | 步间等待 (秒) |
 | `--wave-period` | `4.0` | 波浪周期 (秒) |
 | `--wave-dt` | `0.05` | 波浪控制周期 (秒) |
 | `--read-interval` | `0.5` | 同步读取间隔 (秒) |
+
+---
+
+## 5. hls3606_force_feedback.py — 力反馈/柔顺控制
+
+通过限制扭矩上限实现柔顺的位置保持：舵机 PID 仍然在保持目标位置，但扭矩被压低后，人手可以轻易拧开输出轴，松手后自动回正——类似一个可变刚度的弹簧。
+
+```bash
+# 默认: 目标180°, 扭矩150 (柔软弹簧感)
+python hls3606_force_feedback.py
+
+# 更软的力反馈
+python hls3606_force_feedback.py --torque 60
+
+# 交互模式: 键盘实时调整扭矩和目标位置
+python hls3606_force_feedback.py --interactive
+```
+
+**扭矩 vs 手感:**
+
+| torque 值 | 手感 |
+|-----------|------|
+| 500-1000 | 刚性，几乎拧不动 |
+| 200-500 | 有弹性的弹簧感 |
+| 50-200 | 柔软，极易拨动，松手缓慢回正 |
+| 0 | 完全释放扭矩 (同自由编码器模式) |
+
+**交互模式按键:**
+
+| 按键 | 功能 |
+|------|------|
+| `↑`/`w` | 扭矩 +50 (变硬) |
+| `↓`/`s` | 扭矩 -50 (变软) |
+| `←`/`a` | 目标位置左移 |
+| `→`/`d` | 目标位置右移 |
+| `Space` | 切换扭矩使能/释放 |
+| `r` | 复位默认值 |
+| `q`/`Esc` | 退出 |
+
+**原理:** `WritePosEx(id, pos, speed, acc, torque)` 的 `torque` 参数 (0-1023) 直接限制电机的最大力矩/电流。位置环 PID 始终运行，但输出上限被 `torque` 限制。
+
+---
+
+## 6. hls3606_free_encoder.py — 自由编码器模式
+
+释放舵机扭矩 (TORQUE_ENABLE = 0)，电机完全断电，输出轴零阻力自由转动。舵机的磁编码器持续读取位置，实现类似"旋转编码器"的效果。
+
+```bash
+# 自由转动, 实时显示位置和速度曲线
+python hls3606_free_encoder.py
+
+# 保存数据到CSV
+python hls3606_free_encoder.py --save
+
+# 运行60秒自动停止
+python hls3606_free_encoder.py --duration 60
+```
+
+**实时绘图:**
+- 上图: 位置曲线 (0-360°)
+- 下图: 速度曲线 (rpm, 基于位置差分计算)
+- 终端: 实时显示位置、速度和转动方向 (↻/↺)
+
+---
+
+## 7. hls3606_config.py — ID/中位配置工具
+
+修改舵机 ID 和中位校准 (零点偏移)。所有修改写入 EEPROM，断电保持。
+
+```bash
+# 读取当前配置
+python hls3606_config.py --read
+
+# 修改舵机 ID (⚠️ 总线上只能接一个舵机)
+python hls3606_config.py --set-id 2
+
+# 中位校准: 将当前位置设为 180° (2048)
+python hls3606_config.py --calibrate 2048
+
+# 清除零点偏移 (恢复出厂)
+python hls3606_config.py --reset-offset
+```
+
+**中位校准原理:** `reOfsCal(1, 2048)` 将舵机当前物理位置的读数强制设为 2048。补偿机械安装偏差导致的零点漂移。
+
+**相关寄存器:**
+
+| 地址 | 名称 | 说明 |
+|------|------|------|
+| 5 | HLS_ID | 舵机 ID (EEPROM) |
+| 31-32 | HLS_OFS_L/H | 零点偏移 (EEPROM) |
+| 55 | HLS_LOCK | EEPROM 写保护锁 |
+
+⚠️ EEPROM 写入有寿命 (~10万次)，不要频繁修改。
 
 ---
 
@@ -181,7 +276,7 @@ python hls3606_sync_multi.py --mode sync_read --ids 1,2 --read-interval 0.1
 from scservo_sdk import *
 
 # 串口处理器
-portHandler = PortHandler("/dev/ttyACM0")
+portHandler = PortHandler("/dev/ttyACM1")
 portHandler.openPort()
 portHandler.setBaudRate(1000000)
 
@@ -194,17 +289,22 @@ packetHandler = hls(portHandler)
 | 方法 | 功能 |
 |------|------|
 | `ping(id)` | Ping 舵机, 返回型号 |
-| `WritePosEx(id, pos, speed, acc, torque)` | 位置控制 (带速度/加速度/扭矩) |
+| `WritePosEx(id, pos, speed, acc, torque)` | 位置控制 (带速度/加速度/扭矩限制) |
 | `ReadPos(id)` | 读当前位置 |
 | `ReadSpeed(id)` | 读当前速度 |
 | `ReadPosSpeed(id)` | 同时读位置和速度 |
 | `ReadMoving(id)` | 读运动状态 (0=停止) |
 | `SyncWritePosEx(id, pos, speed, acc, torque)` | 添加同步写参数 |
 | `groupSyncWrite.txPacket()` | 执行同步写 |
-| `reSet(id)` | 舵机复位 |
-| `reOfsCal(id, pos)` | 位置校准 |
+| `reSet(id)` | 舵机复位 (清除圈数) |
+| `reOfsCal(id, pos)` | 中位校准 (将当前位置设为pos) |
 | `WheelMode(id)` | 设置轮式模式 |
 | `WriteSpec(id, speed, acc, torque)` | 速度控制 (轮式) |
+| `LockEprom(id)` / `unLockEprom(id)` | EEPROM 写保护 锁定/解锁 |
+| `write1ByteTxRx(id, addr, val)` | 写入 1 字节 (寄存器) |
+| `write2ByteTxRx(id, addr, val)` | 写入 2 字节 (寄存器) |
+| `read1ByteTxRx(id, addr)` | 读取 1 字节 (寄存器) |
+| `read2ByteTxRx(id, addr)` | 读取 2 字节 (寄存器) |
 
 ### 单位换算
 
@@ -228,13 +328,19 @@ packetHandler = hls(portHandler)
 |------|------|------|------|
 | 5 | HLS_ID | 舵机 ID | R/W |
 | 6 | HLS_BAUD_RATE | 波特率 | R/W |
+| 9-10 | HLS_MIN_ANGLE_LIMIT | 最小角度限制 | R/W |
+| 11-12 | HLS_MAX_ANGLE_LIMIT | 最大角度限制 | R/W |
+| 31-32 | HLS_OFS | 零点偏移 | R/W |
 | 33 | HLS_MODE | 模式 (0=位置, 1=轮式) | R/W |
 | 40 | HLS_TORQUE_ENABLE | 扭矩使能 (0=释放, 1=使能) | R/W |
 | 41 | HLS_ACC | 加速度 | R/W |
 | 42-43 | HLS_GOAL_POSITION | 目标位置 | R/W |
+| 44-45 | HLS_GOAL_TORQUE | 扭矩限制 (电流限制) | R/W |
 | 46-47 | HLS_GOAL_SPEED | 目标速度 | R/W |
+| 55 | HLS_LOCK | EEPROM 写保护锁 | R/W |
 | 56-57 | HLS_PRESENT_POSITION | 当前位置 | R |
 | 58-59 | HLS_PRESENT_SPEED | 当前速度 | R |
+| 60-61 | HLS_PRESENT_LOAD | 当前负载 | R |
 | 62 | HLS_PRESENT_VOLTAGE | 当前电压 (×0.1V) | R |
 | 63 | HLS_PRESENT_TEMPERATURE | 当前温度 (°C) | R |
 | 66 | HLS_MOVING | 运动状态 (0=停止) | R |
@@ -249,7 +355,7 @@ packetHandler = hls(portHandler)
               RX ──► TX (舵机)
               GND ──► GND
 
-Linux 设备路径: /dev/ttyACM0 或 /dev/ttyUSB0
+Linux 设备路径: /dev/ttyACM1 或 /dev/ttyUSB0
 ```
 
 **权限问题:** 如提示权限不足:

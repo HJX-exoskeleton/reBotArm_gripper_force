@@ -194,7 +194,7 @@ def main():
     )
     parser.add_argument("--port", type=str, default=SERIAL_PORT, help=f"串口设备 (默认: {SERIAL_PORT})")
     parser.add_argument("--baudrate", type=int, default=BAUDRATE, help=f"波特率 (默认: {BAUDRATE})")
-    parser.add_argument("--id", type=int, default=SERVO_ID, help=f"舵机ID (默认: {SERVO_ID})")
+    parser.add_argument("--id", type=int, default=7, help=f"舵机ID (默认: 7)")
     parser.add_argument("--target", type=int, default=DEFAULT_TARGET, help=f"目标位置 raw (默认: {DEFAULT_TARGET})")
     parser.add_argument("--torque", type=int, default=DEFAULT_TORQUE, help=f"扭矩限制 (默认: {DEFAULT_TORQUE})")
     parser.add_argument("--speed", type=int, default=DEFAULT_SPEED, help=f"回正速度 (默认: {DEFAULT_SPEED})")

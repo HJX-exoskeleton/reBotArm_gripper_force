@@ -36,7 +36,7 @@ SERIAL_PORT = "/dev/ttyACM1"
 BAUDRATE = 1000000
 
 # 默认舵机 ID 范围
-DEFAULT_SERVO_IDS = [1]
+DEFAULT_SERVO_IDS = [7]
 
 # 运动参数
 DEFAULT_SPEED = 40
@@ -341,7 +341,7 @@ def main():
     )
     parser.add_argument("--port", type=str, default=SERIAL_PORT, help=f"串口设备 (默认: {SERIAL_PORT})")
     parser.add_argument("--baudrate", type=int, default=BAUDRATE, help=f"波特率 (默认: {BAUDRATE})")
-    parser.add_argument("--ids", type=str, default="1", help="舵机ID列表 (默认: 1)")
+    parser.add_argument("--ids", type=str, default="7", help="舵机ID列表 (默认: 7)")
     parser.add_argument("--mode", type=str, default="sync_pos",
                         choices=["sync_pos", "sync_read", "wave", "relay"],
                         help="运动模式 (默认: sync_pos)")
