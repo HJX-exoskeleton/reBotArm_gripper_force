@@ -12,7 +12,7 @@ python motor_pos_detection_read.py
 
 # 测试robotiq夹爪的手势识别mujoco仿真控制
 cd cv_control
-conda activate force_gripper 
+conda activate rebot
 python cv_sim_gripper_tactile_rgb.py  # 单独夹爪
 python cv_sim_gripper_arm_tac.py  # 集成至机械臂末端
 
