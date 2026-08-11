@@ -58,7 +58,7 @@ SERVO_ANGLE = 360.0
 FORCE_THRESHOLD = 0.35
 TORQUE_BASE = 50
 TORQUE_GRASP = 500  # 600
-BACKOFF_MARGIN = 0.1
+BACKOFF_MARGIN = 0.02             # rad, 抓取后允许的额外闭合量 (小=扭矩稳定在阈值附近)
 
 # 力反馈释放参数
 RELEASE_RAW_THRESHOLD = 10     # 用户拧开 ~0.88° 即触发释放 (90°行程=1024 raw)
