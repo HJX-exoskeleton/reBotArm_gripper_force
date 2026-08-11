@@ -66,7 +66,7 @@ FORCE_RATIO_SATURATE = 2.5      # 力矩映射饱和倍数: threshold * 2.5 时�
 
 # 夹爪扭矩上限 (独立于力反馈阈值, 防止夹碎物体)
 TORQUE_LIMIT = 0.6              # Nm, 扭矩超过此值禁止继续闭合 (但始终允许张开)
-TORQUE_BACKOFF_GAIN = 0.15      # rad/Nm, 超调回退增益: overshoot * gain = 回退弧度
+TORQUE_BACKOFF_GAIN = 0.05      # rad/Nm, 超调回退增益: overshoot * gain = 回退弧度
 
 # 绘图
 PLOT_RATE = 6.0
@@ -484,11 +484,12 @@ def main():
                 grip_target = min(grip_target, grasp_pos + BACKOFF_MARGIN)
                 grip_target = clamp(grip_target, P_OPEN, P_CLOSE)
 
-            # ── 扭矩上限保护 (独立于力反馈, 主动比例回退) ──
+            # ── 扭矩上限保护 (只限制闭合, 不阻挡张开) ──
             if abs_torque > TORQUE_LIMIT:
                 overshoot = abs_torque - TORQUE_LIMIT
                 backoff = overshoot * TORQUE_BACKOFF_GAIN
-                grip_target = clamp(pos - backoff, P_OPEN, P_CLOSE)  # 主动回退
+                max_close = clamp(pos - backoff, P_OPEN, P_CLOSE)
+                grip_target = min(grip_target, max_close)  # 只封上限, 张开方向放行
                 if not torque_limited:
                     torque_limited = True
                     print(f"\n  ⛔ TORQUE LIMIT! torque={abs_torque:.3f} > {TORQUE_LIMIT}, "
