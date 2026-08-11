@@ -33,7 +33,7 @@ from actuator.gripper import Gripper
 # ==================== 配置 ====================
 GRIPPER_CONFIG = str(PROJECT_ROOT / "config" / "gripper.yaml")
 
-P_OPEN = -5.8
+P_OPEN = -5.7
 P_CLOSE = 0.0
 POSITION_FAULT_MARGIN = 0.75
 
@@ -55,10 +55,18 @@ SERVO_RANGE = 4095.0
 SERVO_ANGLE = 360.0
 
 # 力反馈
-FORCE_THRESHOLD = 0.265
+FORCE_THRESHOLD = 0.35
 TORQUE_BASE = 50
-TORQUE_GRASP = 600
+TORQUE_GRASP = 500  # 600
 BACKOFF_MARGIN = 0.1
+
+# 力反馈释放参数
+RELEASE_RAW_THRESHOLD = 10     # 用户拧开 ~0.88° 即触发释放 (90°行程=1024 raw)
+FORCE_RATIO_SATURATE = 2.5      # 力矩映射饱和倍数: threshold * 2.5 时达到最大阻力
+
+# 夹爪扭矩上限 (独立于力反馈阈值, 防止夹碎物体)
+TORQUE_LIMIT = 0.6              # Nm, 扭矩超过此值禁止继续闭合 (但始终允许张开)
+TORQUE_BACKOFF_GAIN = 0.2      # rad/Nm, 超调回退增益: overshoot * gain = 回退弧度
 
 # 绘图
 PLOT_RATE = 6.0
@@ -114,9 +122,10 @@ class HLSServo:
 # ==================== HardwareWorker (对齐 cv_motor) ====================
 
 class HardwareWorker(threading.Thread):
-    def __init__(self, config_path: str):
+    def __init__(self, config_path: str, torque_limit: Optional[float] = None):
         super().__init__(daemon=True)
         self.config_path = config_path
+        self._torque_limit = torque_limit  # 线程内扭矩上限, None=不启用
         self._lock = threading.Lock()
         self._stop_event = threading.Event()
         self._ready_event = threading.Event()
@@ -206,6 +215,7 @@ class HardwareWorker(threading.Thread):
             held_after_loss = False
             period = 1.0 / CONTROL_RATE
             next_tick = time.monotonic()
+            prev_abs_torque = 0.0  # 用于扭矩变化率预判
 
             while not self._stop_event.is_set():
                 with self._lock:
@@ -222,8 +232,48 @@ class HardwareWorker(threading.Thread):
                     held_after_loss = False
 
                 target = self.clamp_position(target)
-                gripper.pos_vel(target, VELOCITY_LIMIT)
+
+                # ── 动态限速 (扭矩余量 + 扭矩变化率预判) ──
+                if self._torque_limit is not None:
+                    abs_t = abs(torque)
+                    torque_headroom = max(0.0, self._torque_limit - abs_t)
+                    torque_rate = (abs_t - prev_abs_torque) / period  # Nm/s
+
+                    # 基础限速: 扭矩越接近上限越慢
+                    if torque_headroom < 0.03:
+                        vlim = 0.8
+                    elif torque_headroom < 0.08:
+                        vlim = 1.5
+                    elif torque_headroom < 0.15:
+                        vlim = 2.5
+                    elif torque_headroom < 0.25:
+                        vlim = 4.0
+                    else:
+                        vlim = VELOCITY_LIMIT  # 6.0
+
+                    # 扭矩变化率预判: 扭矩快速上升 → 提前减速, 防止冲击尖峰
+                    if torque_rate > 80:        # >80 Nm/s, 刚性碰撞
+                        vlim = min(vlim, 1.0)
+                    elif torque_rate > 40:      # >40 Nm/s, 即将接触
+                        vlim = min(vlim, 2.0)
+                    elif torque_rate > 15:      # >15 Nm/s, 轻触
+                        vlim = min(vlim, 3.5)
+
+                    prev_abs_torque = abs_t
+                else:
+                    vlim = VELOCITY_LIMIT
+
+                gripper.pos_vel(target, vlim)
                 position, velocity, torque = gripper.get_state(request=False)
+
+                # ── 线程内扭矩上限快速回退 (延迟 ~10ms, 远快于主循环) ──
+                if self._torque_limit is not None and abs(torque) > self._torque_limit:
+                    overshoot = abs(torque) - self._torque_limit
+                    backoff = overshoot * TORQUE_BACKOFF_GAIN
+                    target = self.clamp_position(position - backoff)
+                    gripper.pos_vel(target, 1.0)  # 回退时慢速, 避免震荡
+                    position, velocity, torque = gripper.get_state(request=False)
+                    prev_abs_torque = abs(torque)  # 更新, 避免下周期误判
 
                 if not all(math.isfinite(v) for v in (position, velocity, torque)):
                     raise RuntimeError("电机反馈包含 NaN/Inf")
@@ -327,7 +377,7 @@ def main():
 
     # [2] HardwareWorker
     print("\n[2] 达妙夹爪 HardwareWorker...")
-    hw = HardwareWorker(GRIPPER_CONFIG)
+    hw = HardwareWorker(GRIPPER_CONFIG, torque_limit=TORQUE_LIMIT)
     hw.start()
     if not hw.wait_ready(STARTUP_TIMEOUT + 4.0):
         err = hw.snapshot()["error"] or "超时"
@@ -365,7 +415,9 @@ def main():
     grasping = False
     grasp_pos = P_CLOSE
     grasp_hls_raw = mid_raw
+    hls_target_raw = mid_raw   # 动态HLS目标位置, 跟随用户往OPEN方向移动
     hls_torque = 0
+    torque_limited = False     # 扭矩上限锁定标志
 
     try:
         while True:
@@ -388,33 +440,64 @@ def main():
             torq = state["torque"]
             abs_torque = abs(torq)
 
-            # 力反馈状态机
+            # ── 力反馈状态机 ──
             if abs_torque > threshold and not grasping:
                 grasping = True
                 grasp_pos = pos
                 grasp_hls_raw = raw if raw is not None else mid_raw
+                hls_target_raw = grasp_hls_raw   # 动态目标初始化为抓取点
                 print(f"\n  ⚡ GRASP! torque={abs_torque:.3f} > {threshold}")
 
             elif abs_torque <= threshold * 0.5 and grasping:
                 grasping = False
                 hls.release()
                 hls_torque = 0
-                print(f"\n  ✅ free")
+                print(f"\n  ✅ free (torque dropped)")
 
-            # 安全限制夹爪指令
+            # ── HLS 力反馈 (比例 + 方向感知) ──
+            if grasping:
+                current_raw = raw if raw is not None else grasp_hls_raw
+
+                # 用户往 OPEN 方向拧: raw变小 (180°→90°, raw 2048→1024)
+                # 动态目标跟随用户, 允许释放
+                if current_raw < hls_target_raw:
+                    hls_target_raw = current_raw
+
+                # 检测用户拧开角度, 超过阈值直接释放舵机
+                open_deviation = grasp_hls_raw - hls_target_raw
+                if open_deviation > RELEASE_RAW_THRESHOLD:
+                    grasping = False
+                    hls.release()
+                    hls_torque = 0
+                    print(f"\n  ✅ released (user opened servo, dev={open_deviation})")
+                else:
+                    # 比例扭矩: 夹爪力矩 → HLS阻力, 力越大阻力越大
+                    force_ratio = min(1.0, abs_torque / (threshold * FORCE_RATIO_SATURATE))
+                    hls_torque = int(TORQUE_BASE + force_ratio * (TORQUE_GRASP - TORQUE_BASE))
+
+                    if hls_torque > 0:
+                        hls.enable()
+                    hls.set_pos_torque(hls_target_raw, hls_torque, 30, 15)
+
+            # ── 安全限制夹爪指令 (抓取时只能开不能继续闭) ──
             if grasping:
                 grip_target = min(grip_target, grasp_pos + BACKOFF_MARGIN)
                 grip_target = clamp(grip_target, P_OPEN, P_CLOSE)
 
-            hw.set_target(grip_target)
+            # ── 扭矩上限保护 (独立于力反馈, 主动比例回退) ──
+            if abs_torque > TORQUE_LIMIT:
+                overshoot = abs_torque - TORQUE_LIMIT
+                backoff = overshoot * TORQUE_BACKOFF_GAIN
+                grip_target = clamp(pos - backoff, P_OPEN, P_CLOSE)  # 主动回退
+                if not torque_limited:
+                    torque_limited = True
+                    print(f"\n  ⛔ TORQUE LIMIT! torque={abs_torque:.3f} > {TORQUE_LIMIT}, "
+                          f"overshoot={overshoot:.3f}, backoff={backoff:.3f}")
+            elif abs_torque < TORQUE_LIMIT * 0.85 and torque_limited:
+                torque_limited = False
+                print(f"\n  ✅ torque ok ({abs_torque:.3f} < {TORQUE_LIMIT * 0.85:.3f})")
 
-            # HLS 力反馈
-            if grasping:
-                if hls_torque == 0:
-                    hls.enable()
-                    time.sleep(0.02)
-                hls_torque = TORQUE_GRASP
-                hls.set_pos_torque(grasp_hls_raw, hls_torque, 20, 10)
+            hw.set_target(grip_target)
 
             # HLS 回正目标 (显示用)
             tgt_deg = gripper_pos_to_servo_deg(pos)
@@ -456,6 +539,7 @@ def main():
             pct = (pos - P_OPEN) / (P_CLOSE - P_OPEN) * 100 if abs(P_CLOSE - P_OPEN) > 1e-6 else 0
             pct = clamp(pct, 0, 100)
             st = "⚡GRASP" if grasping else "  free"
+            st += " ⛔TLIM" if torque_limited else ""
             print(f"\r  t={now:5.1f}s | HLS={deg:5.1f}°→{tgt_deg:5.1f}° | "
                   f"pos={pos:+.3f} torq={abs_torque:.3f} | {st} | hls_t={hls_torque:3d}  ",
                   end="", flush=True)
