@@ -33,7 +33,7 @@ from actuator.gripper import Gripper
 # ==================== 配置 ====================
 GRIPPER_CONFIG = str(PROJECT_ROOT / "config" / "gripper.yaml")
 
-P_OPEN = -5.7
+P_OPEN = -5.7  # -5.8
 P_CLOSE = 0.0
 POSITION_FAULT_MARGIN = 0.75
 
