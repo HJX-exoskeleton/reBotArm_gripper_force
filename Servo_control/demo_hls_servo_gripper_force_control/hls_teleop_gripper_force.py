@@ -66,7 +66,7 @@ FORCE_RATIO_SATURATE = 2.5      # 力矩映射饱和倍数: threshold * 2.5 时�
 
 # 夹爪扭矩上限 (独立于力反馈阈值, 防止夹碎物体)
 TORQUE_LIMIT = 0.6              # Nm, 扭矩超过此值禁止继续闭合 (但始终允许张开)
-TORQUE_BACKOFF_GAIN = 0.2      # rad/Nm, 超调回退增益: overshoot * gain = 回退弧度
+TORQUE_BACKOFF_GAIN = 0.15      # rad/Nm, 超调回退增益: overshoot * gain = 回退弧度
 
 # 绘图
 PLOT_RATE = 6.0
