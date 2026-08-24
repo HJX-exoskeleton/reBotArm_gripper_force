@@ -50,9 +50,7 @@
                         <!-- Point-like virtual probe. The 16x16 spacing and
                              visual pad remain unchanged; only the hidden
                              distance-sampling footprint is made tiny. -->
-                        <geom type="box" size="0.0035 0.0035 0.002"
-                              contype="0" conaffinity="0"
-                              rgba="0.5 0.3 0.2 0.3" mass="0"/>
+                        <geom type="box" size="0.0035 0.0035 0.002" contype="0" conaffinity="0" rgba="0.5 0.3 0.2 0.3" mass="0"/>
                     </body>
                 </replicate>
             </replicate>
