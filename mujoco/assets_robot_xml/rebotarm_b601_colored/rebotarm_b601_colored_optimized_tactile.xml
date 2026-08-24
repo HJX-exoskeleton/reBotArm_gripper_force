@@ -177,16 +177,16 @@
                     <body name="finger_left_link" pos="0 0.0005 0">
 
                     <!-- touch_pad_left -->
-                    <include file="tactile/touch_pad_left.xml"/>
+<!--                    <include file="tactile/touch_pad_left.xml"/>-->
 <!--                    <include file="tactile/touch_pad_left_8_16.xml"/>-->
 
-<!--                    <body name="left_pad" pos="-0.05 0.0057 0" gravcomp="1" euler="0 1.57 0">-->
-<!--                      <include file="touch/left_pad_collisions.xml"/>-->
-<!--                      <inertial mass="0.0035" pos="0 -0.0025 0.0185" quat="1 0 0 1" diaginertia="4.73958e-07 3.64583e-07 1.23958e-07"/>-->
-<!--                      <body name="touch_left" gravcomp="1">-->
-<!--                        <site name="touch_left" pos="0 0.018 0.02" euler="-1.57 0 0" rgba="0.72 0.1 0.2 0.2"/>-->
-<!--                      </body>-->
-<!--                    </body>-->
+                    <body name="left_pad" pos="-0.05 0.0057 0" gravcomp="1" euler="0 1.57 0">
+                      <include file="touch/left_pad_collisions.xml"/>
+                      <inertial mass="0.0035" pos="0 -0.0025 0.0185" quat="1 0 0 1" diaginertia="4.73958e-07 3.64583e-07 1.23958e-07"/>
+                      <body name="touch_left" gravcomp="1">
+                        <site name="touch_left" pos="0 0.018 0.02" euler="-1.57 0 0" rgba="0.72 0.1 0.2 0.0"/>
+                      </body>
+                    </body>
 
                       <joint name="finger_left" type="slide" axis="0 1 0" range="0.001 0.05" damping="18.0"/>
                       <inertial pos="0 0 0" mass="0.03" diaginertia="0.00001 0.00001 0.00001"/>
@@ -202,16 +202,16 @@
                     <body name="finger_right_link" pos="0 -0.0005 0">
 
                     <!-- touch_pad_right -->
-                    <include file="tactile/touch_pad_right.xml"/>
+<!--                    <include file="tactile/touch_pad_right.xml"/>-->
 <!--                    <include file="tactile/touch_pad_right_8_16.xml"/>-->
 
-<!--                    <body name="right_pad" pos="-0.05 -0.0005 0" gravcomp="1" euler="0 1.57 0">-->
-<!--                      <include file="touch/right_pad_collisions.xml"/>-->
-<!--                      <inertial mass="0.0035" pos="0 -0.0025 0.0185" quat="1 0 0 1" diaginertia="4.73958e-07 3.64583e-07 1.23958e-07"/>-->
-<!--                      <body name="touch_right" gravcomp="1">-->
-<!--                        <site name="touch_right" pos="0. -0.023 0.02" euler="1.57 0 3.14" rgba="0.2 0.1 0.2 0.2"/>-->
-<!--                      </body>-->
-<!--                    </body>-->
+                    <body name="right_pad" pos="-0.05 -0.0005 0" gravcomp="1" euler="0 1.57 0">
+                      <include file="touch/right_pad_collisions.xml"/>
+                      <inertial mass="0.0035" pos="0 -0.0025 0.0185" quat="1 0 0 1" diaginertia="4.73958e-07 3.64583e-07 1.23958e-07"/>
+                      <body name="touch_right" gravcomp="1">
+                        <site name="touch_right" pos="0. -0.023 0.02" euler="1.57 0 3.14" rgba="0.2 0.1 0.2 0.0"/>
+                      </body>
+                    </body>
 
                       <joint name="finger_right" type="slide" axis="0 1 0" range="-0.05 0.001" damping="18.0"/>
                       <inertial pos="0 0 0" mass="0.03" diaginertia="0.00001 0.00001 0.00001"/>
@@ -265,8 +265,8 @@
     <accelerometer name="accel_wrist" site="imu_wrist" />
 
     <!-- touch sensor tactile -->
-    <force name="touch_point_right" site="touch_point_right" />
-    <force name="touch_point_left" site="touch_point_left" />
+<!--    <force name="touch_point_right" site="touch_point_right" />-->
+<!--    <force name="touch_point_left" site="touch_point_left" />-->
 
 <!--    <force name="touch_point_left_000" site="touch_point_left_000" />-->
 <!--    <force name="touch_point_left_001" site="touch_point_left_001" />-->
@@ -527,6 +527,6 @@
   </sensor>
 
   <!-- touch sensor-->
-<!--  <include file="touch/touch_sensors.xml"/>-->
+  <include file="touch/touch_sensors.xml"/>
 
 </mujoco>
