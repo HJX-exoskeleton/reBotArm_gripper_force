@@ -1,5 +1,5 @@
 <mujoco>
-  <body name="touch_pad_right" pos="-0.045 -0.0118 -0.015" euler="1.57 3.14 1.57" gravcomp="1">
+  <body name="touch_pad_right" pos="-0.045 -0.012 -0.015" euler="1.57 3.14 1.57" gravcomp="1">
     <geom class="pad" name="touch_base_right" type="box" pos="0.015 0.015 0.0116" size="0.008 0.016 0.0002" rgba="0.15 0.15 0.15 1"/>
     <body name="touch_cell_right_000" pos="0.008 0.000 0.012" gravcomp="1">
       <geom class="pad" type="box" size="0.001 0.001 0.0002" rgba="0.5 0.3 0.2 0.3" mass="0"/>
