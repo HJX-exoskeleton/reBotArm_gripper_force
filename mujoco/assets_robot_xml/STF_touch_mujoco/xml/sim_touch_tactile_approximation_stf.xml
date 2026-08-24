@@ -20,12 +20,12 @@
 <!--            <geom size="0.05" type="sphere" mass="1" rgba="1 0 0 1"/>-->
 <!--        </body>-->
 
-<!--        <body pos="0.65 0.19 1">-->
+<!--        <body pos="0.15 0.19 1">-->
 <!--            <freejoint />-->
 <!--            <geom type="box" size="0.051 0.051 0.051" mass="6" rgba="0 0 1 1"/>-->
 <!--        </body>-->
 
-<!--        <body name="red_cylinder" pos="0.65 0.1 0.35">-->
+<!--        <body name="red_cylinder" pos="0.15 0.1 0.35">-->
 <!--            <joint name="red_cylinder_joint" type="free" frictionloss="0.1" />-->
 <!--            <geom mass="6" pos="0 0 0" size="0.054 0.06" type="cylinder" name="red_cylinder" rgba="1 0 0 1" />-->
 <!--        </body>-->
@@ -43,14 +43,14 @@
             <geom name="sim_touch_base_stf" type="box" pos="0.15 0.15 0" size="0.16 0.16 0.01" rgba="0.15 0.15 0.15 1" />
             <replicate count="16" offset="0.0 0.02 0.0">
                 <replicate count="16" offset="0.02 0.0 0.0">
-                    <body pos="0 0 0.012" gravcomp="1">
+                    <body pos="0 0 0.009" gravcomp="1">
                         <!-- Sensing taxels are virtual only: they never enter
                              the contact solver.  The Python script measures
                              their distance to external objects instead. -->
                         <!-- Point-like virtual probe. The 16x16 spacing and
                              visual pad remain unchanged; only the hidden
                              distance-sampling footprint is made tiny. -->
-                        <geom type="box" size="0.001 0.001 0.001"
+                        <geom type="box" size="0.0035 0.0035 0.002"
                               contype="0" conaffinity="0"
                               rgba="0.5 0.3 0.2 0.3" mass="0"/>
                     </body>
