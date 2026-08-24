@@ -14,11 +14,11 @@
         <geom name="floor" size="0 0 0.05" type="plane" material="groundplane"/>
         <light directional="true" ambient=".3 .3 .3" pos="30 30 30" dir="0 -.5 -1" diffuse=".5 .5 .5" specular=".5 .5 .5" />
 
-<!--        <body pos="0.1 0.1 0.5">-->
-<!--            <freejoint />-->
-<!--            <geom size="0.01" type="sphere" pos="0.02 0.02 0.02" mass="1"/>-->
-<!--            <geom size="0.05" type="sphere" mass="1" rgba="1 0 0 1"/>-->
-<!--        </body>-->
+        <body pos="0.1 0.1 0.5">
+            <freejoint />
+            <geom size="0.01" type="sphere" pos="0.02 0.02 0.02" mass="0.1"/>
+            <geom size="0.05" type="sphere" mass="1" rgba="1 0 0 1"/>
+        </body>
 
 <!--        <body pos="0.65 0.19 1">-->
 <!--            <freejoint />-->
@@ -30,13 +30,13 @@
 <!--            <geom mass="6" pos="0 0 0" size="0.054 0.06" type="cylinder" name="red_cylinder" rgba="1 0 0 1" />-->
 <!--        </body>-->
 
-        <body pos="0.15 0.15 .4" euler="0 0 0">
-          <freejoint/>
-<!--          <replicate count="11" euler="0 0 36">-->
-          <replicate count="11" euler="0 0 38">
-            <geom mass="1.2" type="box" pos="0 -0.058 0" size=".025 .01 .1" rgba="0 .8 0 1"/>
-          </replicate>
-        </body>
+<!--        <body pos="0.15 0.15 .4" euler="0 0 0">-->
+<!--          <freejoint/>-->
+<!--&lt;!&ndash;          <replicate count="11" euler="0 0 36">&ndash;&gt;-->
+<!--          <replicate count="11" euler="0 0 38">-->
+<!--            <geom mass="1.2" type="box" pos="0 -0.058 0" size=".025 .01 .1" rgba="0 .8 0 1"/>-->
+<!--          </replicate>-->
+<!--        </body>-->
 
 
         <body name="sim_touch_pad_stf" pos="0 0 0.1">
